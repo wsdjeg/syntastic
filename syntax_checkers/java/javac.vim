@@ -444,7 +444,7 @@ fu! s:GradleOutputDirectory()
     let sep = syntastic#util#Slash()
     let items = split(gradle_build,sep)
     if len(items)==1
-        return 'build/intermediates/classes/debug'
+        return join(['build','intermediates','classes','debug'],sep)
     else
         let outputdir =''
         for i in items
@@ -452,13 +452,14 @@ fu! s:GradleOutputDirectory()
                 let outputdir .= i.sep
             endif
         endfor
-        return outputdir.'build/intermediates/classes/debug'
+        return outputdir.join(['build','intermediates','classes','debug'],sep)
     endif
     return '.'
 endf
 
 fu! s:GetGradleClasspath()
     let gradle = syntastic#util#findFileInParent('build.gradle', expand('%:p:h', 1))
+    let sep = syntastic#util#Slash()
     if s:has_gradle && filereadable(gradle)
         if !has_key(g:syntastic_java_javac_gradle_ftime, gradle) || g:syntastic_java_javac_gradle_ftime[gradle] != getftime(gradle)
             try
@@ -468,12 +469,12 @@ fu! s:GetGradleClasspath()
                 else
                     let gradle_cmd = './gradlew'
                 endif
-                call writefile(["allprojects{apply from: '" . g:javac_checker_home . "/classpath.gradle'}"], f)
+                call writefile(["allprojects{apply from: '" . g:javac_checker_home . sep ."classpath.gradle'}"], f)
                 let ret = system(gradle_cmd . ' -q -I ' . shellescape(f) . ' classpath' )
                 if v:shell_error == 0
                     let cp = filter(split(ret, "\n"), 'v:val =~ "^CLASSPATH:"')[0][10:]
-                    if filereadable(getcwd() . "/build.gradle")
-                        let out_putdir = s:GlobPathList(getcwd(), '**/build/intermediates/classes/debug', 0)
+                    if filereadable(getcwd() . sep ."build.gradle")
+                        let out_putdir = s:GlobPathList(getcwd(), join('**','build','intermediates','classes','debug',sep), 0)
                         for classes in out_putdir
                             let cp .= s:ClassSep().classes
                         endfor
